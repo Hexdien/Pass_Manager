@@ -7,6 +7,12 @@
 <B> Este software possui um formulário básico para inserir dados em um banco de dados PostgreSQL </B><br>
 <p>
 
+##Update 0.0.3
+
+Agora a aba busca funciona parcialmente
+Adicionado checkboxes na aba busca para definir quais colunas a Query
+SELECT irá buscar.
+
 
 <a href="https://www.tiktok.com/@hexdien">Visite o meu TikTok</a><p>
 
