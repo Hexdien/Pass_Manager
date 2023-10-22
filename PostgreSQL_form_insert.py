@@ -9,15 +9,26 @@
 #           Adicionamos checkbox na aba de busca
 #           A checkbox define quais colunas o select irá buscar
 #         
-#           Caixas de buscas funcionando (*precisa de testes*)
-#
+#           Aprimorado a função de busca, agora as colunas cabeçalhos
+#           são criadas de acordo com as checkboxes selecionadas
 #
 #####################################################################
-#       Proxima update : 
+#       Proximas update : 
+#       Nas caixas de busca de plataforma, iremos adicionar uma caixa
+#       no formato lista que terá os resultados das plataformas pelo
+#       nome e não pelo ID
+#
+#       Adicionar outra aba para se conectar ao banco de dados          
+#       de acordo com os dados que foram inseridos
+#   
+#       Adicionar Aba para deletar um valor da tabela do banco de dados
+#
+#
+#
 #       Estilizar alguns widgets 
 #       
-#       Iremos adicionar a função ao botão buscar para que 
-#       ele busque os dados que forem inseridos nos Entrys do frame2
+#      
+#     
 #
 #
 #
@@ -28,8 +39,8 @@ import tkinter as tk
 from tkinter import *
 from tkinter import ttk
 import psycopg2 
-
-
+import random
+import pdb
 
 #############################################
 ############ Se conectando ao postgresql
@@ -46,6 +57,42 @@ try:
 except (Exception, psycopg2.Error) as error:
     print("Falha ao se conectar no banco de dados: "+error)
 #############################################
+
+
+#############################################
+win = Tk()
+win.title("Login Form")
+win.geometry("405x350")
+tabcon = ttk.Notebook(win)
+
+#############################################
+#   Estilizando
+#############################################
+style = ttk.Style(win)
+style.theme_use("classic")
+
+#############################################
+#       Frames
+#############################################
+
+frm1 = ttk.Frame(tabcon)            #### Aba Adicionar Login
+frm1.pack(expand=True,fill="both")
+
+
+frm2 = ttk.Frame(tabcon)            #### Aba Buscar Loging
+frm2.pack()
+
+#############################################
+# Tabs
+#############################################
+tabcon.add(frm1, text='Adicionar Login')
+tabcon.add(frm2, text='Buscar Login')
+tabcon.pack(expand=1, fill="both")
+
+
+
+
+
 #############################################
 #   Funções
 #############################################
@@ -53,6 +100,8 @@ except (Exception, psycopg2.Error) as error:
 logins = {}
 
 colunas = []
+
+colempt = ['0','0','0','0']
 def mostrarsenha():
     global ent2, checkb
     if checkb.var.get():
@@ -65,35 +114,39 @@ def mostrarsenha():
 def usuario():
     sname = field3['search_usuario'].get()
     logins['usuario'] = sname
- 
+    global item2
     if checkuser.var.get():
-        #print(logins['usuario'])
         colunas.insert(0,"usuario,")
-        print("colunas LIST = "+ str(colunas))
+        colempt[0] = "1"
     else:
         colunas.remove("usuario,")
+        colempt[0] = "0"
         print("Usuario removido")
+
 
 def psenha():
     ssenha = field3['search_senha'].get()
     logins['senha'] = ssenha
- 
+    global item2
     if checksenha.var.get():
         colunas.insert(1,"senha,")
-        print("colunas LIST = "+ str(colunas))
+        colempt[1] = "1"
+        
     else:
         colunas.remove("senha,")
+        colempt[1] = "0"
         print("Senha removido")
 
 def pemail():
     semail = field3['search_email'].get()
     logins['email'] = semail
- 
+    global item2
     if checkemail.var.get():
         colunas.insert(2,"email,")
-        print("colunas LIST = "+ str(colunas))
+        colempt[2] = "1"
     else:
         colunas.remove("email,")
+        colempt[2] = "0"
         print("Email removido")
 
 def pplat():
@@ -102,9 +155,11 @@ def pplat():
  
     if checkplat.var.get():
         colunas.insert(3,"id_plataforma,")
-        print("colunas LIST = "+ str(colunas))
+        colempt[3] = "1"
     else:
+        #for row in tv.get_children():
         colunas.remove("id_plataforma,")
+        colempt[3] = "0"
         print("Plataforma removido")
 
 
@@ -140,7 +195,7 @@ def addlogin():
 #   Query Select
 #############################################
 def buscarloginADV():
-
+    global item2, rowcount, columns
     sname = field3['search_usuario'].get()
     ssenha = field3['search_senha'].get()
     semail = field3['search_email'].get()
@@ -156,18 +211,14 @@ def buscarloginADV():
 
 
     ###################################################################
-
-    ######################  Este bloco irá adicionar para dentro da
-    ######################  variavel colunastrip, apenas as colunas
-    ######################  que tiverem dados preenchidos          
-
+        
+    ############### Criando a query SELECT ###############
     cstring = ""
     cntr=0
     clnsu=len(colunas) 
 
     
     colunastrip=' '.join(colunas).strip(',')
-    
     slct = "SELECT " + colunastrip + " FROM login WHERE "
     qop = " = %s "
     qand = "and "
@@ -180,8 +231,7 @@ def buscarloginADV():
         if logins[i] != "":
             qdlist.append(logins.get(i))
             cnns=colunas.index(i+",")
-            qcol = colunas[cnns].strip(',')
-            print("qcol VAR = "+qcol)
+            qcol = colunas[cnns].strip(',')         ## Variavel com colunas removendo a virgula do final
             arg+=1
             if arg == 1:
                 queryselect+= qcol + qop
@@ -189,9 +239,9 @@ def buscarloginADV():
                 queryselect+= qand + qcol + qop + qand
             elif arg == clnsu:
                 queryselect+=qand + qcol + qop
+               
 
     querydados = tuple(qdlist)
-    print("querydados VAR = "+str(querydados))
     querysant=queryselect.replace('and and', 'and')
     pgquery2=slct+querysant
     pgquery1=pgquery2.strip()
@@ -199,10 +249,39 @@ def buscarloginADV():
         pgquery=pgquery1.rsplit(' ',1)[0]
     else:
         pgquery=pgquery1
+    #                       Fim do bloco que cria a QUERY
+    ###################################################################
+
+
+    #                       Inicio do bloco que Executa a query
+    ###################################################################
     pgcursor.execute(pgquery,(querydados))
-    print("pgquery VAR = "+pgquery)
-    print("querydados VAR = "+str(querydados))
-    print(pgcursor.fetchall())
+    rows = pgcursor.fetchall()
+    
+    cntrows= 0              ## Contar quantas linhas o select retornou
+    tvsize = 0              ## Contar tamanho da treeview
+    cntitem = 0             ## conta quantas colunas foram selecionadas
+
+    for i in tv.get_children():     ## apaga todas as rows antes de 
+        tv.delete(i)                ## inserir novas
+
+    tv.insert('',index=0,iid="teste",value="TESTE") ## item para crar 
+    avbl=0                                          ## Header
+
+
+    for item in colempt:
+        if item == "1":
+            tv.set("teste",column=avbl,value=columns[cntitem])
+            avbl+=1
+        cntitem+=1
+
+    for i in rows:
+        tv.insert('','end',value=i)     ## insere as linhas resultante
+                                        ## do SELECT
+
+###################################################################
+
+
 
 def lastword(string):
     lis = list(string.split(" "))
@@ -210,67 +289,38 @@ def lastword(string):
     return lis[length-1]
 
  
- #'''   if pgquery1.rsplit(' ',1)[0] == 'and':
-  #      print("caiu no IF")
-   #     pgquery=pgquery1.rsplit(' ',1)[0]
-   # else:
-   #     print("caiu no ELSE")
-   #     pgquery=pgquery1'''
-    ###################################################################
-
-
-#############################################
-win = Tk()
-win.title("Login Form")
-win.geometry("405x350")
-tabcon = ttk.Notebook(win)
-
-#############################################
-#   Estilizando
-#############################################
-style = ttk.Style(win)
-style.theme_use("classic")
-
-#############################################
-#       Frames
-#############################################
-
-frm1 = ttk.Frame(tabcon)            #### Aba Adicionar Login
-frm1.pack(expand=True,fill="both")
-
-
-frm2 = ttk.Frame(tabcon)            #### Aba Buscar Loging
-frm2.pack()
-
-#############################################
-# Tabs
-#############################################
-tabcon.add(frm1, text='Adicionar Login')
-tabcon.add(frm2, text='Buscar Login')
-tabcon.pack(expand=1, fill="both")
-
+    if pgquery1.rsplit(' ',1)[0] == 'and':
+        pgquery=pgquery1.rsplit(' ',1)[0]
+    else:
+        pgquery=pgquery1
+###################################################################
 
 #############################################
 #   Aba Buscar Login
 #############################################
-#frm2.grid_rowconfigure(5, weight=1)
-#frm2.rowconfigure(1, 1)
 
-tv = ttk.Treeview(frm2, columns=(1,2,3,4),show="headings",height="6")
+####################
+#Listas/tuples/dicts
+####################
+columns = ("usuario", "senha", "email", "plataforma")
+rowcount =  { col:0 for col in columns }
+
+
+####################
+#   Caixa Treeview
+####################
+
+tv = ttk.Treeview(frm2, columns=columns,show="",height="6")
 tv.grid(row=5,column=0,columnspan=3)
-tv.column(1,width=100)
-tv.column(2,width=100)
-tv.column(3,width=100)
-tv.column(4,width=100)
+for col in columns:
+    tv.heading(col, text=col)
+    tv.column(col, anchor="c", width=100)
 
 
-tv.heading(1, text="Login")
-tv.heading(2, text="Senha")
-tv.heading(3, text="Email")
-tv.heading(4, text="Plataforma")
-#########
-btn3 = Button(frm2, text="Buscar", command=buscarloginADV,bg="Green")
-btn3.grid(row=4,column=1)
+
+####################
+#   Variaveis
+####################
 
 
 
@@ -283,7 +333,9 @@ semail = StringVar()
 var4s = StringVar()
 splataforma = StringVar()
 
+####################
 
+#   Caixas
 ff3 = frm2
 field3 = {}
 
@@ -298,7 +350,7 @@ for fields3 in field3.values():
     fields3.grid(row=rs, column=1,pady=5,sticky=tk.W)
     rs += 1
 
-#
+#   Labels
 field4 = {}
 
 field4['search_usuario'] = ttk.Label(ff3, text="Usuario")
@@ -312,6 +364,11 @@ for fields4 in field4.values():
     fields4.grid(row=rs2, column=0,pady=5,sticky=tk.E)
     rs2 += 1
 
+
+# Botões
+
+btn3 = Button(frm2, text="Buscar", command=buscarloginADV,bg="Green")
+btn3.grid(row=4,column=1)
 
 #################################################################### Fim da aba buscar
 ###########################
@@ -352,8 +409,8 @@ field2['entry_email'] = ttk.Entry(frm1, textvariable=email)
 field2['entry_plataforma'] = ttk.Entry(frm1, textvariable=plataforma)
 
 
-r=0             ### variavel para incrementar linhas
-                ### loop para organizar o grid
+r=0    
+      
 for fields in field.values():
     fields.grid(row=r, column=1,pady=5)
     r += 1
@@ -403,9 +460,6 @@ checkplat['variable'] = checkplat.var
 ###########################
 #       Widgets
 ###########################
-# label1 = Label(frm1, textvariable=var1)
-# var1.set("Login")
-# label1.grid(row=0,column=1)
 checkb = ttk.Checkbutton(frm1, text='Mostrar senha',onvalue=True,offvalue=False,command=mostrarsenha)
 checkb.grid(row=1,column=3)
 checkb.var = tk.BooleanVar(value=False)
