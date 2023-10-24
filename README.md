@@ -7,11 +7,14 @@
 <B> Este software possui um formulário básico para inserir dados em um banco de dados PostgreSQL </B><br>
 <p>
 
-##Update 0.0.3
+<h3>CHANGE LOG</h3>
 
-Agora a aba busca funciona parcialmente
-Adicionado checkboxes na aba busca para definir quais colunas a Query
-SELECT irá buscar.
+
+Agora a aba adicionar login possui um botão para adicionar plataformas
+novas.
+
+A caixa de plataformas não mais é identificar pelo ID e sim pelo nome irá aparecer automaticamente todos os nomes das plataformas na lista de plataformas
+
 
 
 <a href="https://www.tiktok.com/@hexdien">Visite o meu TikTok</a><p>
