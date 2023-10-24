@@ -1,29 +1,30 @@
 #
 #
 ####################    Change log  #################################
-#           Update 0.0.3
-#           
-#           Adicionamos o botão de busca que pega os valores das caixas
-#           e verificas os checkbox para montar a Query           
+#           Update 0.0.5
 #
-#           Adicionamos checkbox na aba de busca
-#           A checkbox define quais colunas o select irá buscar
-#         
-#           Aprimorado a função de busca, agora as colunas cabeçalhos
-#           são criadas de acordo com as checkboxes selecionadas
+#           Adicionamos na aba Adicionar login a o botão 
+#           Adicionar Plataforma, que irá incrementar o nome
+#           da plataforma que estiver escrito no campo plataforma
+#           á tabela plataforma no banco de dados
+#     
+#           Modificamos a Entry Plataforma, agora é Combobox
+#           e adicionamos a função buscarplat() a ela, assim irá
+#           retornar as plataformas que estão contidas no banco de 
+#           dados
 #
 #####################################################################
 #       Proximas update : 
-#       Nas caixas de busca de plataforma, iremos adicionar uma caixa
-#       no formato lista que terá os resultados das plataformas pelo
-#       nome e não pelo ID
+#       Faremos o mesmo que fizemos com o campo plataforma na aba 
+#       adicionar login porém na aba Buscar login
+#     
 #
 #       Adicionar outra aba para se conectar ao banco de dados          
 #       de acordo com os dados que foram inseridos
 #   
 #       Adicionar Aba para deletar um valor da tabela do banco de dados
 #
-#
+#       Adicionar o arquivo SQL para o esquema do banco de dados
 #
 #       Estilizar alguns widgets 
 #       
@@ -40,6 +41,7 @@ from tkinter import *
 from tkinter import ttk
 import psycopg2 
 import random
+import re
 import pdb
 
 #############################################
@@ -97,11 +99,6 @@ tabcon.pack(expand=1, fill="both")
 #   Funções
 #############################################
 
-logins = {}
-
-colunas = []
-
-colempt = ['0','0','0','0']
 def mostrarsenha():
     global ent2, checkb
     if checkb.var.get():
@@ -178,10 +175,10 @@ def addlogin():
     cname = field2['entry_usuario'].get()
     senha = field2['entry_senha'].get()
     email = field2['entry_email'].get()
-    plataforma = field2['entry_plataforma'].get()
+    plataforma = cmbbox.get()
     try:
         pgsql_insert = """ INSERT INTO login(usuario,senha,email,id_plataforma)
-                        values (%s,%s,%s,%s)"""
+                        values (%s,%s,%s,(SELECT id_plataforma from plataforma where nome = %s))"""
         inserir = (cname,senha,email,plataforma)
         pgcursor.execute(pgsql_insert,inserir)
         con.commit()
@@ -189,6 +186,46 @@ def addlogin():
         return True
     except (Exception, psycopg2.Error) as error:
         print("Falha ao inserir dado(s) na tabela", error)
+
+def addplat():
+    plataforma2 = cmbbox.get()
+    try:
+        pgsql_insert = """ INSERT INTO plataforma(nome)
+                        values (%s)"""
+        #pdb.set_trace()           # Debugar
+        #inserir = (plataforma)
+       #platresult2 = pgcursor.fetchall()
+       #platresult = []
+       #for i in platresult2:
+        plataforma = re.sub("[{'',()}]","",plataforma2)
+        pgcursor.execute(pgsql_insert,[plataforma])
+        con.commit()
+        print(pgcursor.rowcount,"Dado(s) inserido(s) com sucesso na tabela plataforma")
+        print(plataforma + " Foi inserido! ")
+        buscarplat()
+        return True
+    except (Exception, psycopg2.Error) as error:
+        print("Falha ao inserir dado(s) na tabela", error)
+
+
+
+def buscarplat():
+    plataforma = cmbbox.get()
+    try:
+        pgsql_insert = """ SELECT nome from plataforma """
+        pgcursor.execute(pgsql_insert)
+        platresult2 = pgcursor.fetchall()
+        platresult = []
+        for i in platresult2:
+            platresult.append(re.sub("[{'',()}]","",str(i)))
+        #platresult = re.sub("[{}]","",platresult2)
+        cmbbox['values'] = platresult
+        print(platresult)
+        #print(pgcursor.rowcount,"Dado(s) inserido(s) com sucesso na tabela login")
+        return True
+    except (Exception, psycopg2.Error) as error:
+        print("Falha ao buscar as plataformas: ", error)
+
 
 #############################################
 #############################################
@@ -304,6 +341,9 @@ def lastword(string):
 ####################
 columns = ("usuario", "senha", "email", "plataforma")
 rowcount =  { col:0 for col in columns }
+logins = {}
+colunas = []
+colempt = ['0','0','0','0']
 
 
 ####################
@@ -370,7 +410,8 @@ for fields4 in field4.values():
 btn3 = Button(frm2, text="Buscar", command=buscarloginADV,bg="Green")
 btn3.grid(row=4,column=1)
 
-#################################################################### Fim da aba buscar
+########################### Fim da aba buscar ##########################
+########################### Inicio da aba inserir ######################
 ###########################
 #   Variaveis de inserção
 ###########################
@@ -383,7 +424,7 @@ senha = StringVar()
 var3 = StringVar()
 email = StringVar()
 var4 = StringVar()
-plataforma = IntVar()
+plataforma = StringVar()
 
 ###########################
 
@@ -400,13 +441,22 @@ var3.set("Email")
 
 field['plataforma'] = ttk.Label(frm1, textvariable=var4)
 var4.set("Plataforma")
+cmbbox = ttk.Combobox(frm1,textvariable=plataforma)
+cmbbox.grid(row=3,column=2,pady=5)
+
+crvl = plataforma.get()
+
+buscarplat()
+btn4 = Button(frm1, text="Adicionar Plataforma", command=addplat,bg="Green")
+btn4.grid(row=3,column=3,pady=5)
+
+
 
 field2 = {}
 
 field2['entry_usuario'] = ttk.Entry(frm1, textvariable=cname)
 field2['entry_senha'] = ttk.Entry(frm1, textvariable=senha)
 field2['entry_email'] = ttk.Entry(frm1, textvariable=email)
-field2['entry_plataforma'] = ttk.Entry(frm1, textvariable=plataforma)
 
 
 r=0    
