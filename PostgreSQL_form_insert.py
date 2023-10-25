@@ -1,23 +1,13 @@
 #
 #
 ####################    Change log  #################################
-#           Update 0.0.5
+#           Update 0.0.6
 #
-#           Adicionamos na aba Adicionar login a o botão 
-#           Adicionar Plataforma, que irá incrementar o nome
-#           da plataforma que estiver escrito no campo plataforma
-#           á tabela plataforma no banco de dados
-#     
-#           Modificamos a Entry Plataforma, agora é Combobox
-#           e adicionamos a função buscarplat() a ela, assim irá
-#           retornar as plataformas que estão contidas no banco de 
-#           dados
+#           Adicionado lista de plataforma na aba Busca Login 
+#           na caixa de plataforma
 #
 #####################################################################
 #       Proximas update : 
-#       Faremos o mesmo que fizemos com o campo plataforma na aba 
-#       adicionar login porém na aba Buscar login
-#     
 #
 #       Adicionar outra aba para se conectar ao banco de dados          
 #       de acordo com os dados que foram inseridos
@@ -81,7 +71,7 @@ frm1 = ttk.Frame(tabcon)            #### Aba Adicionar Login
 frm1.pack(expand=True,fill="both")
 
 
-frm2 = ttk.Frame(tabcon)            #### Aba Buscar Loging
+frm2 = ttk.Frame(tabcon)            #### Aba Buscar Login
 frm2.pack()
 
 #############################################
@@ -103,10 +93,8 @@ def mostrarsenha():
     global ent2, checkb
     if checkb.var.get():
         field2['entry_senha']['show'] = ""
-        #ent2['show'] = ""
     else:
         field2['entry_senha']['show'] = "*"
-        #ent2['show'] = "*"
 
 def usuario():
     sname = field3['search_usuario'].get()
@@ -147,15 +135,14 @@ def pemail():
         print("Email removido")
 
 def pplat():
-    splataforma = field3['search_plataforma'].get()
-    logins['id_plataforma'] = splataforma
+    splataforma = cmbbox2.get()
+    logins['nome'] = splataforma
  
     if checkplat.var.get():
-        colunas.insert(3,"id_plataforma,")
+        colunas.insert(3,"p.nome,")
         colempt[3] = "1"
     else:
-        #for row in tv.get_children():
-        colunas.remove("id_plataforma,")
+        colunas.remove("p.nome,")
         colempt[3] = "0"
         print("Plataforma removido")
 
@@ -192,11 +179,6 @@ def addplat():
     try:
         pgsql_insert = """ INSERT INTO plataforma(nome)
                         values (%s)"""
-        #pdb.set_trace()           # Debugar
-        #inserir = (plataforma)
-       #platresult2 = pgcursor.fetchall()
-       #platresult = []
-       #for i in platresult2:
         plataforma = re.sub("[{'',()}]","",plataforma2)
         pgcursor.execute(pgsql_insert,[plataforma])
         con.commit()
@@ -218,10 +200,9 @@ def buscarplat():
         platresult = []
         for i in platresult2:
             platresult.append(re.sub("[{'',()}]","",str(i)))
-        #platresult = re.sub("[{}]","",platresult2)
         cmbbox['values'] = platresult
+        cmbbox2['values'] = platresult
         print(platresult)
-        #print(pgcursor.rowcount,"Dado(s) inserido(s) com sucesso na tabela login")
         return True
     except (Exception, psycopg2.Error) as error:
         print("Falha ao buscar as plataformas: ", error)
@@ -236,13 +217,13 @@ def buscarloginADV():
     sname = field3['search_usuario'].get()
     ssenha = field3['search_senha'].get()
     semail = field3['search_email'].get()
-    splataforma = field3['search_plataforma'].get()
+    splataforma = cmbbox2.get()
     
     logins = {}
     logins['usuario'] = sname
     logins['senha'] = ssenha
     logins['email'] = semail
-    logins['id_plataforma'] = splataforma
+    logins['p.nome'] = splataforma
    
     ###################################################################
 
@@ -256,7 +237,8 @@ def buscarloginADV():
 
     
     colunastrip=' '.join(colunas).strip(',')
-    slct = "SELECT " + colunastrip + " FROM login WHERE "
+    slct = "SELECT " + colunastrip + " FROM login join plataforma as p using(id_plataforma) "
+    whr = "WHERE "
     qop = " = %s "
     qand = "and "
     queryselect=""
@@ -271,11 +253,11 @@ def buscarloginADV():
             qcol = colunas[cnns].strip(',')         ## Variavel com colunas removendo a virgula do final
             arg+=1
             if arg == 1:
-                queryselect+= qcol + qop
+                queryselect+= whr + qcol + qop
             elif arg > 1 and arg != clnsu:
-                queryselect+= qand + qcol + qop + qand
+                queryselect+= qand + whr + qcol + qop + qand
             elif arg == clnsu:
-                queryselect+=qand + qcol + qop
+                queryselect+=qand + whr + qcol + qop
                
 
     querydados = tuple(qdlist)
@@ -382,7 +364,12 @@ field3 = {}
 field3['search_usuario'] = ttk.Entry(ff3, textvariable=sname)
 field3['search_senha'] = ttk.Entry(ff3, textvariable=ssenha)
 field3['search_email'] = ttk.Entry(ff3, textvariable=semail)
-field3['search_plataforma'] = ttk.Entry(ff3, textvariable=splataforma)
+#field3['search_plataforma'] = ttk.Entry(ff3, textvariable=splataforma)
+
+cmbbox2 = ttk.Combobox(ff3,textvariable=splataforma)
+cmbbox2.grid(row=3,column=1,pady=5,sticky=tk.W)
+
+
 
 
 rs = 0
@@ -444,7 +431,6 @@ var4.set("Plataforma")
 cmbbox = ttk.Combobox(frm1,textvariable=plataforma)
 cmbbox.grid(row=3,column=2,pady=5)
 
-crvl = plataforma.get()
 
 buscarplat()
 btn4 = Button(frm1, text="Adicionar Plataforma", command=addplat,bg="Green")
@@ -512,7 +498,7 @@ checkplat['variable'] = checkplat.var
 ###########################
 checkb = ttk.Checkbutton(frm1, text='Mostrar senha',onvalue=True,offvalue=False,command=mostrarsenha)
 checkb.grid(row=1,column=3)
-checkb.var = tk.BooleanVar(value=False)
+checkb.var = tk.BooleanVar(value=True)
 checkb['variable'] = checkb.var
 
 btn = Button(frm1, text="Adicionar Login", command=addlogin,fg="green")
